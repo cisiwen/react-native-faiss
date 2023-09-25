@@ -5,6 +5,11 @@ import androidx.annotation.NonNull;
 import com.facebook.react.bridge.Promise;
 import com.facebook.react.bridge.ReactApplicationContext;
 import com.facebook.react.bridge.ReactMethod;
+import com.faiss.models.IndexInput;
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
+
+import java.lang.reflect.Type;
 
 public class FaissModule extends FaissSpec {
   public static final String NAME = "Faiss";
@@ -36,7 +41,21 @@ public class FaissModule extends FaissSpec {
         vector[i][j]=0.009001F*j;
       }
     }
-    faissManager.faceEmbeddingIndex(vector,ids,dim);
+    IndexInput input = new IndexInput();
+    input.embedding= vector;
+    input.dim= dim;
+    input.ids= ids;
+    faissManager.faceEmbeddingIndex(input);
     promise.resolve(a * b);
+  }
+
+  @Override
+  public void faissIndex(String data, Promise promise) {
+    Type inputType = new TypeToken<IndexInput>(){}.getType();
+    Gson gson = new Gson();
+    IndexInput input = gson.fromJson(data,inputType);
+    FaissManager faissManager = new FaissManager();
+    String result = faissManager.faceEmbeddingIndex(input);
+    promise.resolve(result);
   }
 }

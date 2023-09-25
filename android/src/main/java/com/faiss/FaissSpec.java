@@ -10,4 +10,5 @@ abstract class FaissSpec extends ReactContextBaseJavaModule {
   }
 
   public abstract void multiply(double a, double b, Promise promise);
+  public abstract void faissIndex(String data,Promise promise);
 }

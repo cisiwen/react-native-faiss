@@ -1,13 +1,15 @@
 package com.faiss;
 
+import com.faiss.models.IndexInput;
+
 public class FaissManager {
   static {
     System.loadLibrary("faiss");
   }
 
 
-  public void faceEmbeddingIndex(float[][] vector, int[] ids, int size){
-    FaissManager.indexFromAndroid(vector,ids,size);
+  public String faceEmbeddingIndex(IndexInput input){
+    return FaissManager.indexFromAndroid(input.embedding,input.ids,input.dim);
   }
   public static native String stringFromJNI(int a);
 

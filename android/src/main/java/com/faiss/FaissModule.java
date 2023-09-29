@@ -45,11 +45,11 @@ public class FaissModule extends FaissSpec {
     input.embedding= vector;
     input.dim= dim;
     input.ids= ids;
-    faissManager.faceEmbeddingIndex(input);
+    //faissManager.faceEmbeddingIndex(input);
     promise.resolve(a * b);
   }
 
-  @Override
+  @ReactMethod
   public void faissIndex(String data, Promise promise) {
     Type inputType = new TypeToken<IndexInput>(){}.getType();
     Gson gson = new Gson();

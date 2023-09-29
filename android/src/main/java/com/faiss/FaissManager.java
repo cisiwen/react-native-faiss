@@ -9,10 +9,10 @@ public class FaissManager {
 
 
   public String faceEmbeddingIndex(IndexInput input){
-    return FaissManager.indexFromAndroid(input.embedding,input.ids,input.dim);
+    return FaissManager.indexFromAndroid(input.embedding,input.ids,input.dim,input.indexFullName);
   }
   public static native String stringFromJNI(int a);
 
-  public static native  String indexFromAndroid(float[][] vector, int[] ids, int size);
+  public static native  String indexFromAndroid(float[][] vector, int[] ids, int size,String indexName);
 
 }

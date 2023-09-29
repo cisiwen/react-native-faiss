@@ -84,12 +84,27 @@ std::vector<float> Convert2dJavaObjectArrayToCppFloatVector(JNIEnv *env, jobject
 }
 
 
+std::string ConvertJavaStringToCppString(JNIEnv * env, jstring javaString) {
+    if (javaString == nullptr) {
+        throw std::runtime_error("String cannot be null");
+    }
+
+    const char *cString = env->GetStringUTFChars(javaString, nullptr);
+    if (cString == nullptr) {
+
+        // Will only reach here if there is no exception in the stack, but the call failed
+        throw std::runtime_error("Unable to convert java string to cpp string");
+    }
+    std::string cppString(cString);
+    env->ReleaseStringUTFChars(javaString, cString);
+    return cppString;
+}
 
 extern "C" JNIEXPORT jstring JNICALL
 Java_com_faiss_FaissManager_indexFromAndroid(JNIEnv *env, jclass clazz,
-                                                         jobjectArray embedding, jintArray ids,jint dim) {
+                                                         jobjectArray embedding, jintArray ids,jint dim,jstring indexName) {
     //faiss::IndexFlatL2 *index = new faiss::IndexFlatL2(dim);
-    std::string name_faiss = "/sdcard/tmp/2.index";
+    std::string name_faiss = ConvertJavaStringToCppString(env,indexName);
     std::string indexDescriptionCpp="Flat";
     std::string  result = "good";
     int length = env->GetArrayLength(embedding);

@@ -1,6 +1,6 @@
 {
-  "name": "react-native-faiss",
-  "version": "0.1.0",
+  "name": "@cisiwen/react-native-faiss",
+  "version": "0.1.2",
   "description": "react native ann search",
   "main": "lib/commonjs/index",
   "module": "lib/module/index",
@@ -85,7 +85,7 @@
   ],
   "packageManager": "yarn@3.6.1",
   "engines": {
-    "node": ">= 18.0.0"
+    "node": ">= 16.0.0"
   },
   "jest": {
     "preset": "react-native",

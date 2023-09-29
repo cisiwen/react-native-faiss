@@ -1,0 +1,6 @@
+example
+.yarn
+.github
+.node_modules
+.npmrc
+.npmignore

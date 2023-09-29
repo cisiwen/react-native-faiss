@@ -4,5 +4,5 @@ public class IndexInput {
   public float[][] embedding;
   public int[] ids;
   public int dim;
-  public  String indexName;
+  public  String indexFullName;
 }

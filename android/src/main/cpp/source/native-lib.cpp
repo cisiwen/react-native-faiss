@@ -25,8 +25,24 @@ int64_t getCurrentMillTime() {
 
 #define FEATURE_COUNT 512
 
+const std::string L2 = "l2";
+const std::string INNER_PRODUCT = "innerproduct";
 
+std::string ConvertJavaStringToCppString(JNIEnv * env, jstring javaString) {
+    if (javaString == nullptr) {
+        throw std::runtime_error("String cannot be null");
+    }
 
+    const char *cString = env->GetStringUTFChars(javaString, nullptr);
+    if (cString == nullptr) {
+
+        // Will only reach here if there is no exception in the stack, but the call failed
+        throw std::runtime_error("Unable to convert java string to cpp string");
+    }
+    std::string cppString(cString);
+    env->ReleaseStringUTFChars(javaString, cString);
+    return cppString;
+}
 std::vector<int64_t>  ConvertJavaIntArrayToCppIntVector(JNIEnv *env, jintArray arrayJ) {
 
     if (arrayJ == nullptr) {
@@ -83,21 +99,54 @@ std::vector<float> Convert2dJavaObjectArrayToCppFloatVector(JNIEnv *env, jobject
     return floatVectorCpp;
 }
 
-
-std::string ConvertJavaStringToCppString(JNIEnv * env, jstring javaString) {
-    if (javaString == nullptr) {
-        throw std::runtime_error("String cannot be null");
+jfloat * GetFloatArrayElements(JNIEnv *env, jfloatArray array, jboolean * isCopy) {
+    float* floatArray = env->GetFloatArrayElements(array, nullptr);
+    if (floatArray == nullptr) {
+        throw std::runtime_error("Unable to get float elements");
     }
 
-    const char *cString = env->GetStringUTFChars(javaString, nullptr);
-    if (cString == nullptr) {
+    return floatArray;
+}
 
-        // Will only reach here if there is no exception in the stack, but the call failed
-        throw std::runtime_error("Unable to convert java string to cpp string");
+
+void ReleaseFloatArrayElements(JNIEnv *env, jfloatArray array, jfloat *elems, int mode) {
+    env->ReleaseFloatArrayElements(array, elems, mode);
+}
+
+faiss::MetricType TranslateSpaceToMetric(const std::string& spaceType) {
+    if (spaceType == L2) {
+        return faiss::METRIC_L2;
     }
-    std::string cppString(cString);
-    env->ReleaseStringUTFChars(javaString, cString);
-    return cppString;
+
+    if (spaceType == INNER_PRODUCT) {
+        return faiss::METRIC_INNER_PRODUCT;
+    }
+
+    throw std::runtime_error("Invalid spaceType");
+}
+
+jlong LoadIndex(JNIEnv * env, jstring indexPathJ) {
+    if (indexPathJ == nullptr) {
+        throw std::runtime_error("Index path cannot be null");
+    }
+
+    std::string indexPathCpp(ConvertJavaStringToCppString(env, indexPathJ));
+    faiss::Index* indexReader = faiss::read_index(indexPathCpp.c_str(), faiss::IO_FLAG_READ_ONLY);
+    return (jlong) indexReader;
+}
+
+jobjectArray NewObjectArray(JNIEnv *env, jsize len, jclass clazz, jobject init) {
+    jobjectArray objectArray = env->NewObjectArray(len, clazz, init);
+    if (objectArray == nullptr) {
+        throw std::runtime_error("Unable to allocate object array");
+    }
+
+    return objectArray;
+}
+
+
+void SetObjectArrayElement(JNIEnv *env, jobjectArray array, jsize index, jobject val) {
+    env->SetObjectArrayElement(array, index, val);
 }
 
 extern "C" JNIEXPORT jstring JNICALL
@@ -107,18 +156,87 @@ Java_com_faiss_FaissManager_indexFromAndroid(JNIEnv *env, jclass clazz,
     std::string name_faiss = ConvertJavaStringToCppString(env,indexName);
     std::string indexDescriptionCpp="Flat";
     std::string  result = "good";
+    std::string  spaceTypeCpp = "l2";
     int length = env->GetArrayLength(embedding);
     int idsLength = env->GetArrayLength(ids);
     auto vectors = Convert2dJavaObjectArrayToCppFloatVector(env,embedding,dim);
     auto idVector = ConvertJavaIntArrayToCppIntVector(env, ids);
+
+    faiss::MetricType metric = TranslateSpaceToMetric(spaceTypeCpp);
+
     std::unique_ptr<faiss::Index> indexWriter;
-    indexWriter.reset(faiss::index_factory(dim, indexDescriptionCpp.c_str()));
+    indexWriter.reset(faiss::index_factory(dim, indexDescriptionCpp.c_str(),metric));
+
+    if(!indexWriter->is_trained) {
+        throw std::runtime_error("Index is not trained");
+    }
+
     faiss::IndexIDMap idMap = faiss::IndexIDMap(indexWriter.get());
     idMap.add_with_ids(length, vectors.data(), idVector.data());
     faiss::write_index(&idMap, name_faiss.c_str());
-   //delete index;
+    //delete indexWriter;
     return env->NewStringUTF(std::to_string(vectors.size()).c_str());
 }
+
+extern "C" JNIEXPORT jobjectArray JNICALL
+Java_com_faiss_FaissManager_QueryIndex(JNIEnv * env,  jclass clazz,jstring indexPathJ, jfloatArray queryVectorJ, jint kJ) {
+
+    if (queryVectorJ == nullptr) {
+        throw std::runtime_error("Query Vector cannot be null");
+    }
+
+    if (indexPathJ == nullptr) {
+        throw std::runtime_error("Index path cannot be null");
+    }
+
+    std::string indexPathCpp(ConvertJavaStringToCppString(env, indexPathJ));
+    faiss::Index* indexReader = faiss::read_index(indexPathCpp.c_str(), faiss::IO_FLAG_READ_ONLY);
+
+    if (indexReader == nullptr) {
+        throw std::runtime_error("Invalid pointer to index");
+    }
+
+    // The ids vector will hold the top k ids from the search and the dis vector will hold the top k distances from
+    // the query point
+    std::vector<float> dis(kJ);
+    std::vector<int64_t> ids(kJ);
+    float* rawQueryvector = GetFloatArrayElements(env, queryVectorJ, nullptr);
+    /*
+        Setting the omp_set_num_threads to 1 to make sure that no new OMP threads are getting created.
+    */
+    //omp_set_num_threads(1);
+    // create the filterSearch params if the filterIdsJ is not a null pointer
+
+    try {
+        indexReader->search(1, rawQueryvector, kJ, dis.data(), ids.data());
+    } catch (...) {
+        ReleaseFloatArrayElements(env, queryVectorJ, rawQueryvector, JNI_ABORT);
+        throw;
+    }
+
+    ReleaseFloatArrayElements(env, queryVectorJ, rawQueryvector, JNI_ABORT);
+
+    // If there are not k results, the results will be padded with -1. Find the first -1, and set result size to that
+    // index
+    int resultSize = kJ;
+    auto it = std::find(ids.begin(), ids.end(), -1);
+    if (it != ids.end()) {
+        resultSize = it - ids.begin();
+    }
+
+
+    jclass resultClass = env->FindClass("com/faiss/models/KNNQueryResult");
+    jmethodID allArgs = env->GetMethodID(resultClass, "<init>", "(IF)V");
+    jobjectArray results = NewObjectArray(env, resultSize, resultClass, nullptr);
+
+    jobject result;
+    for(int i = 0; i < resultSize; ++i) {
+        result = env->NewObject(resultClass, allArgs, ids[i], dis[i]);
+        SetObjectArrayElement(env, results, i, result);
+    }
+    return results;
+}
+
 
 extern "C" JNIEXPORT jstring JNICALL
 Java_com_faiss_FaissManager_stringFromJNI(JNIEnv *env, jclass clazz, jint number) {

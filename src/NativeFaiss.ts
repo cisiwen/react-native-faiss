@@ -7,9 +7,21 @@ export type IndexInput = {
   dim:number;
   ids: number[];
 }
+
+export type QueryInput = {
+  indexFullName: string;
+  queryVector: number[];
+  k: number;
+}
+
+export type QueryResultItem = {
+  id: number;
+  score: number;
+}
 export interface Spec extends TurboModule {
   multiply(a: number, b: number): Promise<number>;
   faissIndex(input:string):Promise<string>;
+  queryIndex(input:string):Promise<string>;
 }
 
 

@@ -53,6 +53,7 @@ add_library( # Sets the name of the library.
 
 
         #compile native-lib.cpp if test
+        #jni_util.cpp
         native-lib.cpp
         )
 

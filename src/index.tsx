@@ -1,5 +1,5 @@
 import { NativeModules, Platform } from 'react-native';
-import type { IndexInput } from './NativeFaiss';
+import type { IndexInput, QueryInput, QueryResultItem } from './NativeFaiss';
 
 const LINKING_ERROR =
   `The package 'react-native-faiss' doesn't seem to be linked. Make sure: \n\n` +
@@ -31,4 +31,17 @@ export function multiply(a: number, b: number): Promise<number> {
 
 export function faissIndex(input:IndexInput): Promise<string> {
   return Faiss.faissIndex(JSON.stringify(input));
+}
+
+export async function faissSearch(input:QueryInput): Promise<QueryResultItem[]> {
+   let result = await Faiss.queryIndex(JSON.stringify(input));
+   if(result){
+    return JSON.parse(result);
+   }
+   else
+   {
+    let dummy:QueryResultItem[] = [];
+    return dummy;
+   }
+    
 }

@@ -6,6 +6,8 @@ import com.facebook.react.bridge.Promise;
 import com.facebook.react.bridge.ReactApplicationContext;
 import com.facebook.react.bridge.ReactMethod;
 import com.faiss.models.IndexInput;
+import com.faiss.models.KNNQueryResult;
+import com.faiss.models.QueryInput;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 
@@ -57,5 +59,16 @@ public class FaissModule extends FaissSpec {
     FaissManager faissManager = new FaissManager();
     String result = faissManager.faceEmbeddingIndex(input);
     promise.resolve(result);
+  }
+
+
+  @ReactMethod
+  public void queryIndex(String query, Promise promise){
+    Type queryInputType = new TypeToken<QueryInput>(){}.getType();
+    Gson gson = new Gson();
+    QueryInput input=gson.fromJson(query,queryInputType);
+    FaissManager faissManager = new FaissManager();
+    KNNQueryResult[] results = faissManager.queryIndex(input);
+    promise.resolve(gson.toJson(results));
   }
 }

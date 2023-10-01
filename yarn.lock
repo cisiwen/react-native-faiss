@@ -907,9 +907,9 @@
   "version" "0.2.3"
 
 "@cisiwen/react-native-photo-ai@^0.1.1":
-  "integrity" "sha512-XFHO0eWnlEbges/XltOMJ6wDSYT1vZEEMszHaN12dx24SO9PhRENIE6bNTMT/RATtIWM16tubpBH0ug/sARBpQ=="
-  "resolved" "https://npm.pkg.github.com/download/@cisiwen/react-native-photo-ai/0.1.1/9e5b83838cfb3e1b886418c9a2453acb019ecbce"
-  "version" "0.1.1"
+  "integrity" "sha512-ZjE12OP/BaP0gJc4uniUtGwP10l6XWHwGOuyQhPtHX5ox92ApgTkMe8I02FFM4d8RJNuMqD8TqmwnBHWckIeeQ=="
+  "resolved" "https://npm.pkg.github.com/download/@cisiwen/react-native-photo-ai/0.1.6/f46a52711203aa8941472bc4f024f68ed2d8597f"
+  "version" "0.1.6"
 
 "@commitlint/cli@^17.7.1":
   "version" "17.7.1"
@@ -6467,7 +6467,7 @@
   "resolved" "file:example"
   "version" "0.0.1"
   dependencies:
-    "@cisiwen/react-native-photo-ai" "^0.1.0"
+    "@cisiwen/react-native-photo-ai" "^0.1.1"
     "@react-native-camera-roll/camera-roll" "^5.9.0"
     "react" "18.2.0"
     "react-native" "0.72.4"

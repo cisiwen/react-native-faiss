@@ -15,6 +15,7 @@
 #include "log.h"
 #include "faiss/AutoTune.h"
 #include "MetaIndexes.h"
+#include "faiss/AuxIndexStructures.h"
 
 int64_t getCurrentMillTime() {
     struct timeval tv;
@@ -238,6 +239,61 @@ Java_com_faiss_FaissManager_QueryIndex(JNIEnv * env,  jclass clazz,jstring index
 }
 
 
+jbyteArray NewByteArray(JNIEnv *env, jsize len) {
+    jbyteArray  byteArray = env->NewByteArray(len);
+    if (byteArray == nullptr) {
+        throw std::runtime_error("Unable to allocate byte array");
+    }
+
+    return byteArray;
+}
+
+
+void SetByteArrayRegion(JNIEnv *env, jbyteArray array, jsize start, jsize len, const jbyte * buf) {
+    env->SetByteArrayRegion(array, start, len, buf);
+}
+
+
+void InternalTrainIndex(faiss::Index * index, int64_t n, const float* x) {
+    if (auto * indexIvf = dynamic_cast<faiss::IndexIVF*>(index)) {
+        if (indexIvf->quantizer_trains_alone == 2) {
+            InternalTrainIndex(indexIvf->quantizer, n, x);
+        }
+        indexIvf->make_direct_map();
+    }
+
+    if (!index->is_trained) {
+        index->train(n, x);
+    }
+}
+
+
+extern "C" JNIEXPORT jlong JNICALL
+Java_com_faiss_FaissManager_TransferVectors(JNIEnv * env, jclass cls,jlong vectorsPointerJ,jobjectArray vectorsJ,jint dimJ)
+{
+    std::vector<float> *vect;
+    if ((long) vectorsPointerJ == 0) {
+        vect = new std::vector<float>;
+    } else {
+        vect = reinterpret_cast<std::vector<float>*>(vectorsPointerJ);
+    }
+
+    auto dataset = Convert2dJavaObjectArrayToCppFloatVector(env, vectorsJ,dimJ);
+    vect->insert(vect->begin(), dataset.begin(), dataset.end());
+
+    return (jlong) vect;
+}
+
+extern "C" JNIEXPORT void JNICALL
+Java_com_faiss_FaissManager_FreeVectors(JNIEnv * env, jclass cls,jlong vectorsPointerJ)
+{
+    if (vectorsPointerJ != 0) {
+        auto *vect = reinterpret_cast<std::vector<float>*>(vectorsPointerJ);
+        delete vect;
+    }
+}
+
+
 extern "C" JNIEXPORT jstring JNICALL
 Java_com_faiss_FaissManager_stringFromJNI(JNIEnv *env, jclass clazz, jint number) {
     std::string result = "0";
@@ -304,3 +360,43 @@ Java_com_faiss_FaissManager_stringFromJNI(JNIEnv *env, jclass clazz, jint number
 }
 
 
+extern "C" JNIEXPORT jbyteArray JNICALL
+Java_com_faiss_FaissManager_TrainIndex(JNIEnv * env,jclass clazz, jint dimensionJ, jlong trainVectorsPointerJ) {
+    // First, we need to build the index
+
+    std::string spaceTypeCpp = "l2";
+    std::string indexDescriptionCpp="Flat";
+    faiss::MetricType metric = TranslateSpaceToMetric(spaceTypeCpp);
+
+    // Create faiss index
+
+    std::unique_ptr<faiss::Index> indexWriter;
+    indexWriter.reset(faiss::index_factory((int) dimensionJ, indexDescriptionCpp.c_str(), metric));
+
+    // Related to https://github.com/facebookresearch/faiss/issues/1621. HNSWPQ defaults to l2 even when metric is
+    // passed in. This updates it to the correct metric.
+    indexWriter->metric_type = metric;
+    // Train index if needed
+    auto *trainingVectorsPointerCpp = reinterpret_cast<std::vector<float>*>(trainVectorsPointerJ);
+    int numVectors = trainingVectorsPointerCpp->size()/(int) dimensionJ;
+    if(!indexWriter->is_trained) {
+        InternalTrainIndex(indexWriter.get(), numVectors, trainingVectorsPointerCpp->data());
+    }
+
+
+    // Now that indexWriter is trained, we just load the bytes into an array and return
+    faiss::VectorIOWriter vectorIoWriter;
+    faiss::write_index(indexWriter.get(), &vectorIoWriter);
+
+    // Wrap in smart pointer
+    std::unique_ptr<jbyte[]> jbytesBuffer;
+    jbytesBuffer.reset(new jbyte[vectorIoWriter.data.size()]);
+    int c = 0;
+    for (auto b : vectorIoWriter.data) {
+        jbytesBuffer[c++] = (jbyte) b;
+    }
+
+    jbyteArray ret = NewByteArray(env, vectorIoWriter.data.size());
+    SetByteArrayRegion(env, ret, 0, vectorIoWriter.data.size(), jbytesBuffer.get());
+    return ret;
+}

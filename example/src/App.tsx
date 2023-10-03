@@ -68,7 +68,7 @@ export default function App() {
         }
       }
     }
-    //search();
+    search();
 
     async function doAll() {
       //await propare();
@@ -76,14 +76,14 @@ export default function App() {
       for (let i = 0; i < imagesData.length; i++) {
         let url: string | undefined = imagesData[i];
         if (url != undefined) {
-          //await test(url, i);
+          await test(url, i);
         }
       }
       await test(url2, 10000);
       let dirResult = await RNFS.readDir(indexPath);
       console.log(dirResult[0]);
     }
-    doAll();
+    //doAll();
   }, []);
 
   return (

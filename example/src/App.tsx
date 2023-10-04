@@ -1,8 +1,8 @@
 import * as React from 'react';
 import * as RNFS from 'react-native-fs';
 import { StyleSheet, View, Text } from 'react-native';
-import { multiply, faissIndex,faissSearch } from '@cisiwen/react-native-faiss';
-import type { IndexInput, QueryInput } from '../../src/NativeFaiss';
+import { multiply, faissIndex,faissSearch,trainIndex} from '../../src/index';
+import type { IndexInput, QueryInput, TrainIndexInput } from '../../src/NativeFaiss';
 import { detectFaces } from '@cisiwen/react-native-photo-ai';
 import datas from './data.json';
 export default function App() {
@@ -34,16 +34,21 @@ export default function App() {
       await RNFS.mkdir(imagesPath);
     }
 
-    async function test(url: string, id: number) {
+    async function test(url: string, id: number,ended:boolean=false) {
       console.log("test", url, id);
 
       let faces = await detectFaces(url, "testing", imagesPath);
+      indexInput.embedding = [];
+      indexInput.ids = [];
+      //indexInput.template=[73,120,70,50,0,2,0,0,0,0,0,0,0,0,0,0,0,0,16,0,0,0,0,0,0,0,16,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0];
       console.log(faces);
       faces.forEach((a, i) => {
         indexInput.ids.push(i + id);
         indexInput.embedding.push(a.embedding);
       })
+      
 
+      indexInput.ended = ended  ? "1" :"0";
       let indexResult = await faissIndex(indexInput);
       console.log(indexResult);
       let dirResult = await RNFS.readDir(indexPath);
@@ -53,7 +58,7 @@ export default function App() {
 
 
     const search = async () => {
-      let faces = await detectFaces(uri, "testing", imagesPath);
+      let faces = await detectFaces(url2, "testing", imagesPath);
       console.log(faces);
       for (let i = 0; i < faces.length; i++) {
         let face = faces[i];
@@ -61,29 +66,62 @@ export default function App() {
           let queryIndex: QueryInput = {
             queryVector: face?.embedding,
             indexFullName: indexInput?.indexFullName ?? '',
-            k: 1
+            k: 10
           }
           let result = await faissSearch(queryIndex);
           console.log("faissSearch",result);
         }
       }
     }
-    search();
+    //search();
 
-    async function doAll() {
+    async function indexAll() {
       //await propare();
       let imagesData = datas.filter((a) => a.includes("jpg") || a.includes("png") || a.includes("heic"));
-      for (let i = 0; i < imagesData.length; i++) {
+      for (let i = 0; i < 200; i++) {
         let url: string | undefined = imagesData[i];
         if (url != undefined) {
           await test(url, i);
         }
       }
-      await test(url2, 10000);
+      await test(uri, 100,false);
+      await test(url2, 10000,false);
       let dirResult = await RNFS.readDir(indexPath);
       console.log(dirResult[0]);
     }
-    //doAll();
+
+    const startTrainIndex = async()=>{
+      let imagesData = datas.filter((a) => a.includes("jpg") || a.includes("png") || a.includes("heic"));
+      let trainInput:TrainIndexInput = {
+        dim:512,
+        embedding:[],
+      };
+
+      let i = 0;
+      while(trainInput.embedding.length<5){
+        let url = imagesData.pop()
+        console.log("train",i,url,trainInput.embedding.length);
+        if(url){
+          let faces = await detectFaces(url, "testing", imagesPath);
+          console.log("train faces",i,url,faces.length);
+          faces.forEach((a,idx) => {
+            trainInput.embedding.push(a.embedding);
+          })
+        }
+        i++;
+      }
+
+      console.log("trainstart",trainInput.embedding.length);
+      let result = await trainIndex(trainInput);
+      console.log(result);
+    }
+
+    const indexWithTemplate = async()=>{
+      let template=[73,120,70,50,0,2,0,0,0,0,0,0,0,0,0,0,0,0,16,0,0,0,0,0,0,0,16,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0];
+    }
+    //startTrainIndex();
+    ///indexAll();
+    search();
   }, []);
 
   return (

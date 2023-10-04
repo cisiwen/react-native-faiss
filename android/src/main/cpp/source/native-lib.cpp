@@ -150,9 +150,75 @@ void SetObjectArrayElement(JNIEnv *env, jobjectArray array, jsize index, jobject
     env->SetObjectArrayElement(array, index, val);
 }
 
+
+int GetJavaObjectArrayLength(JNIEnv *env, jobjectArray arrayJ) {
+
+    if (arrayJ == nullptr) {
+        throw std::runtime_error("Array cannot be null");
+    }
+    int length = env->GetArrayLength(arrayJ);
+    return length;
+}
+
+
+int GetJavaIntArrayLength(JNIEnv *env, jintArray arrayJ) {
+
+    if (arrayJ == nullptr) {
+        throw std::runtime_error("Array cannot be null");
+    }
+
+    int length = env->GetArrayLength(arrayJ);
+    return length;
+}
+
+int GetInnerDimensionOf2dJavaFloatArray(JNIEnv *env, jobjectArray array2dJ) {
+
+    if (array2dJ == nullptr) {
+        throw std::runtime_error("Array cannot be null");
+    }
+
+    if (env->GetArrayLength(array2dJ) <= 0) {
+        return 0;
+    }
+
+    auto vectorArray = (jfloatArray) env->GetObjectArrayElement(array2dJ, 0);
+
+    int dim = env->GetArrayLength(vectorArray);
+
+    return dim;
+}
+
+
+int GetJavaBytesArrayLength(JNIEnv *env, jbyteArray arrayJ) {
+
+    if (arrayJ == nullptr) {
+        throw std::runtime_error("Array cannot be null");
+    }
+
+    int length = env->GetArrayLength(arrayJ);
+    return length;
+}
+
+
+jbyte * GetByteArrayElements(JNIEnv *env, jbyteArray array, jboolean * isCopy) {
+    jbyte * byteArray = env->GetByteArrayElements(array, nullptr);
+    if (byteArray == nullptr) {
+        throw std::runtime_error("Unable able to get byte array");
+    }
+
+    return byteArray;
+}
+
+void ReleaseByteArrayElements(JNIEnv *env, jbyteArray array, jbyte *elems, int mode) {
+    env->ReleaseByteArrayElements(array, elems, mode);
+}
+
+
+std::unique_ptr<faiss::Index> indexWriter;
+faiss::IndexIDMap idMap;
 extern "C" JNIEXPORT jstring JNICALL
 Java_com_faiss_FaissManager_indexFromAndroid(JNIEnv *env, jclass clazz,
-                                                         jobjectArray embedding, jintArray ids,jint dim,jstring indexName) {
+                                                         jobjectArray embedding, jintArray ids,jint dim,jstring indexName,jstring ended) {
     //faiss::IndexFlatL2 *index = new faiss::IndexFlatL2(dim);
     std::string name_faiss = ConvertJavaStringToCppString(env,indexName);
     std::string indexDescriptionCpp="Flat";
@@ -165,19 +231,86 @@ Java_com_faiss_FaissManager_indexFromAndroid(JNIEnv *env, jclass clazz,
 
     faiss::MetricType metric = TranslateSpaceToMetric(spaceTypeCpp);
 
-    std::unique_ptr<faiss::Index> indexWriter;
-    indexWriter.reset(faiss::index_factory(dim, indexDescriptionCpp.c_str(),metric));
+    if(indexWriter == nullptr){
+        indexWriter.reset(faiss::index_factory(dim, indexDescriptionCpp.c_str(),metric));
+        idMap = faiss::IndexIDMap(indexWriter.get());
+    }
+
 
     if(!indexWriter->is_trained) {
         throw std::runtime_error("Index is not trained");
     }
 
-    faiss::IndexIDMap idMap = faiss::IndexIDMap(indexWriter.get());
     idMap.add_with_ids(length, vectors.data(), idVector.data());
-    faiss::write_index(&idMap, name_faiss.c_str());
+
+    std::string end = ConvertJavaStringToCppString(env,ended);
+    if(end == "1") {
+        faiss::write_index(&idMap, name_faiss.c_str());
+    }
     //delete indexWriter;
-    return env->NewStringUTF(std::to_string(vectors.size()).c_str());
+    return env->NewStringUTF(std::to_string(idMap.ntotal).c_str());
 }
+
+
+
+extern "C" JNIEXPORT jstring JNICALL
+Java_com_faiss_FaissManager_CreateIndexFromTemplate(JNIEnv * env,jclass clazz, jintArray idsJ,
+                                                     jobjectArray vectorsJ, jstring indexPathJ,
+                                                     jbyteArray templateIndexJ) {
+    if (idsJ == nullptr) {
+        throw std::runtime_error("IDs cannot be null");
+    }
+
+    if (vectorsJ == nullptr) {
+        throw std::runtime_error("Vectors cannot be null");
+    }
+
+    if (indexPathJ == nullptr) {
+        throw std::runtime_error("Index path cannot be null");
+    }
+
+    if (templateIndexJ == nullptr) {
+        throw std::runtime_error("Template index cannot be null");
+    }
+
+
+
+    // Read data set
+    int numVectors = GetJavaObjectArrayLength(env, vectorsJ);
+    int numIds = GetJavaIntArrayLength(env, idsJ);
+    if (numIds != numVectors) {
+        throw std::runtime_error("Number of IDs does not match number of vectors");
+    }
+
+    int dim = GetInnerDimensionOf2dJavaFloatArray(env, vectorsJ);
+    auto dataset = Convert2dJavaObjectArrayToCppFloatVector(env, vectorsJ, dim);
+
+    // Get vector of bytes from jbytearray
+    int indexBytesCount = GetJavaBytesArrayLength(env, templateIndexJ);
+    jbyte * indexBytesJ = GetByteArrayElements(env, templateIndexJ, nullptr);
+
+    faiss::VectorIOReader vectorIoReader;
+    for (int i = 0; i < indexBytesCount; i++) {
+        vectorIoReader.data.push_back((uint8_t) indexBytesJ[i]);
+    }
+    ReleaseByteArrayElements(env, templateIndexJ, indexBytesJ, JNI_ABORT);
+
+    // Create faiss index
+    std::unique_ptr<faiss::Index> indexWriter;
+    indexWriter.reset(faiss::read_index(&vectorIoReader, 0));
+
+    auto idVector = ConvertJavaIntArrayToCppIntVector(env, idsJ);
+    faiss::IndexIDMap idMap =  faiss::IndexIDMap(indexWriter.get());
+    idMap.add_with_ids(numVectors, dataset.data(), idVector.data());
+
+    // Write the index to disk
+    std::string indexPathCpp(ConvertJavaStringToCppString(env, indexPathJ));
+    faiss::write_index(&idMap, indexPathCpp.c_str());
+
+    return env->NewStringUTF(std::to_string(dataset.size()).c_str());
+}
+
+
 
 extern "C" JNIEXPORT jobjectArray JNICALL
 Java_com_faiss_FaissManager_QueryIndex(JNIEnv * env,  jclass clazz,jstring indexPathJ, jfloatArray queryVectorJ, jint kJ) {

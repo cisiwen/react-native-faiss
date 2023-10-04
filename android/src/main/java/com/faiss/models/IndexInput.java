@@ -5,4 +5,7 @@ public class IndexInput {
   public int[] ids;
   public int dim;
   public  String indexFullName;
+
+  public byte[] template;
+  public  String ended;
 }

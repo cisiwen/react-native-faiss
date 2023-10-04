@@ -6,6 +6,8 @@ export type IndexInput = {
   embedding: number[][];
   dim:number;
   ids: number[];
+  template?:number[];
+  ended:string;
 }
 
 export type QueryInput = {
@@ -18,10 +20,17 @@ export type QueryResultItem = {
   id: number;
   score: number;
 }
+
+export type TrainIndexInput = {
+  embedding: number[][];
+  dim:number;
+}
+
 export interface Spec extends TurboModule {
   multiply(a: number, b: number): Promise<number>;
   faissIndex(input:string):Promise<string>;
   queryIndex(input:string):Promise<string>;
+  trainIndex(input:string):Promise<string>;
 }
 
 

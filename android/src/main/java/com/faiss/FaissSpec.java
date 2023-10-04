@@ -13,4 +13,6 @@ abstract class FaissSpec extends ReactContextBaseJavaModule {
   public abstract void faissIndex(String data,Promise promise);
 
   public abstract void queryIndex(String data,Promise promise);
+
+  public abstract void trainIndex(String trainInput,Promise promise);
 }

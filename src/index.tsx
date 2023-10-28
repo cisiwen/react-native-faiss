@@ -1,5 +1,5 @@
 import { NativeModules, Platform } from 'react-native';
-import type { IndexInput, QueryInput, QueryResultItem, TrainIndexInput } from './NativeFaiss';
+import type { ClusteringInput, ClusteringOutput, IndexInput, QueryInput, QueryResultItem, TrainIndexInput } from './NativeFaiss';
 
 const LINKING_ERROR =
   `The package 'react-native-faiss' doesn't seem to be linked. Make sure: \n\n` +
@@ -45,6 +45,10 @@ export async function faissSearch(input:QueryInput): Promise<QueryResultItem[]> 
    }   
 }
 
+export async function dbscanClustering(input:ClusteringInput):Promise<ClusteringOutput> {
+  let result = await Faiss.dbscanClustering(JSON.stringify(input));
+ return JSON.parse(result);
+}
 export async function trainIndex(input:TrainIndexInput): Promise<string> {
   let result = await Faiss.trainIndex(JSON.stringify(input));
   return result;

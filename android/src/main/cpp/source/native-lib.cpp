@@ -242,10 +242,10 @@ Java_com_faiss_FaissManager_indexFromAndroid(JNIEnv *env, jclass clazz,
     }
 
     idMap.add_with_ids(length, vectors.data(), idVector.data());
-
     std::string end = ConvertJavaStringToCppString(env,ended);
     if(end == "1") {
         faiss::write_index(&idMap, name_faiss.c_str());
+        indexWriter = nullptr;
     }
     //delete indexWriter;
     return env->NewStringUTF(std::to_string(idMap.ntotal).c_str());

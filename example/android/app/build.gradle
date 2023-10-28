@@ -101,6 +101,14 @@ android {
             proguardFiles getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro"
         }
     }
+    packagingOptions {
+      resources {
+        exclude('META-INF/elki/elki.clustering.optics.OPTICSTypeAlgorithm')
+        exclude('META-INF/elki/elki.Algorithm')
+        exclude('META-INF/elki/*')
+        exclude('license/LICENSE')
+      }
+    }
 }
 
 dependencies {

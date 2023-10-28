@@ -16,6 +16,20 @@ export type QueryInput = {
   k: number;
 }
 
+export type ClusteringInput = {
+  startOfData:boolean;
+  endOfData:boolean;
+  eps:number;
+  minPts:number;
+  embedding: number[][];
+  ids: number[];
+}
+
+export type ClusteringOutput = {
+  totalData:number;
+  clusters:any[]
+}
+
 export type QueryResultItem = {
   id: number;
   score: number;
@@ -31,6 +45,7 @@ export interface Spec extends TurboModule {
   faissIndex(input:string):Promise<string>;
   queryIndex(input:string):Promise<string>;
   trainIndex(input:string):Promise<string>;
+  dbscanClustering(input:string):Promise<ClusteringOutput>;
 }
 
 

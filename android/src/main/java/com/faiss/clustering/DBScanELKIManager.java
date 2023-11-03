@@ -1,5 +1,6 @@
 package com.faiss.clustering;
 
+
 import android.util.Log;
 
 import com.faiss.models.DBScanInput;
@@ -11,6 +12,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+/*
 import elki.clustering.dbscan.DBSCAN;
 import elki.data.Cluster;
 import elki.data.Clustering;
@@ -29,9 +31,10 @@ import elki.database.relation.RelationUtil;
 import elki.datasource.ArrayAdapterDatabaseConnection;
 import elki.distance.Distance;
 import elki.distance.minkowski.EuclideanDistance;
-
+*/
 public class DBScanELKIManager {
 
+  /*
   public int getIndexFromData(DBScanInput data, NumberVector oneMember) {
 
     for (int i = 0; i < data.embedding.size(); i++) {
@@ -83,4 +86,5 @@ public class DBScanELKIManager {
     clusters=null;
     return output;
   }
+   */
 }

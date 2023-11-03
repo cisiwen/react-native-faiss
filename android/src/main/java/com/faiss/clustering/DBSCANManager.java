@@ -1,4 +1,6 @@
 package com.faiss.clustering;
+import android.content.Context;
+import android.net.Uri;
 import android.os.Build;
 import android.util.Log;
 
@@ -12,11 +14,30 @@ import org.apache.commons.math3.ml.distance.DistanceMeasure;
 import org.apache.commons.math3.ml.distance.EuclideanDistance;
 
 
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
 
 public class DBSCANManager {
 
+  class IORejectionException extends Exception {
+    private String code;
+
+    public IORejectionException(String code, String message) {
+      super(message);
+      this.code = code;
+    }
+
+    public String getCode() {
+      return code;
+    }
+  }
   /*
   public ArrayList<ArrayList<Integer>> ClusterFaces(DBScanInput data) {
     ArrayList<ArrayList<Integer>> idsClusters = new ArrayList<>();
@@ -74,6 +95,67 @@ public class DBSCANManager {
   }
 
 */
+
+  private Uri getFileUri(String filepath, boolean isDirectoryAllowed) throws IORejectionException {
+    Uri uri = Uri.parse(filepath);
+    if (uri.getScheme() == null) {
+      // No prefix, assuming that provided path is absolute path to file
+      File file = new File(filepath);
+      if (!isDirectoryAllowed && file.isDirectory()) {
+        throw new IORejectionException("EISDIR", "EISDIR: illegal operation on a directory, read '" + filepath + "'");
+      }
+      uri = Uri.parse("file://" + filepath);
+    }
+    return uri;
+  }
+  private InputStream getInputStream(String filepath, Context reactContext) throws IORejectionException {
+    Uri uri = getFileUri(filepath, false);
+    InputStream stream;
+    try {
+      stream = reactContext.getContentResolver().openInputStream(uri);
+    } catch (FileNotFoundException ex) {
+      throw new IORejectionException("ENOENT", "ENOENT: " + ex.getMessage() + ", open '" + filepath + "'");
+    }
+    if (stream == null) {
+      throw new IORejectionException("ENOENT", "ENOENT: could not open an input stream for '" + filepath + "'");
+    }
+    return stream;
+  }
+  public void AddLineToData(DBScanInput data, String line) {
+    if(line!=null) {
+      String[] idEmbedding = line.split(",");
+      double[] embedding = new double[idEmbedding.length - 1];
+      int id = -1;
+      for (int i = 0; i < idEmbedding.length; i++) {
+        if (i == 0) {
+          id = Integer.parseInt((idEmbedding[i]));
+        } else {
+          embedding[i - 1] = Double.parseDouble(idEmbedding[i]);
+        }
+      }
+      data.ids.add(id);
+      data.embedding.add(embedding);
+    }
+  }
+
+  public  ArrayList<ArrayList<Integer>> ClusterWithFile(String fileUri,float eps, int mintPts,Context context) throws IOException, IORejectionException {
+    DBScanInput data = new DBScanInput();
+    data.eps = eps;
+    data.minPts = mintPts;
+    data.embedding = new ArrayList<>();
+    data.ids = new ArrayList<>();
+    InputStream is;
+    BufferedReader reader;
+    is = getInputStream(fileUri, context);
+    reader = new BufferedReader(new InputStreamReader(is));
+    String line = reader.readLine();
+    this.AddLineToData(data, line);
+    while (line != null) {
+      line = reader.readLine();
+      this.AddLineToData(data, line);
+    }
+    return this.ClusterFaces(data);
+  }
 
   public ArrayList<ArrayList<Integer>> ClusterFaces(DBScanInput data) {
     DistanceMeasure distanceMeasure = new DistanceMeasure() {

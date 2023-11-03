@@ -248,7 +248,7 @@ float kmeans_clustering (int64_t d, int64_t n, int64_t k,
                          float *centroids)
 {
     Clustering clus (d, k);
-    clus.verbose = d * n * k > (1LL << 30);
+
     // display logs if > 1Gflop per iteration
     IndexFlatL2 index (d);
     clus.train (n, x, index);

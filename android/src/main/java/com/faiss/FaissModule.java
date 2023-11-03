@@ -126,6 +126,35 @@ public class FaissModule extends FaissSpec {
   }
 
   @ReactMethod
+  public  void clusterWithFile(String fileUri, float eps, int minPts,Promise promise) {
+    Gson gson = new Gson();
+    try {
+      DBSCANManager dbscanManager = new DBSCANManager();
+      ArrayList<ArrayList<Integer>> clusters = dbscanManager.ClusterWithFile(fileUri, eps, minPts,this.getReactApplicationContext());
+      ClusteringOutput output = new ClusteringOutput();
+      output.clusters = clusters;
+      output.totalData = this.dbScanInput.embedding.size();
+      promise.resolve(gson.toJson(output));
+    } catch (Exception ex) {
+      promise.reject(ex);
+    }
+  }
+
+  @ReactMethod
+  public void kmeansCluster(String fileUri,int k, int dim,int size,Promise promise){
+    try {
+      FaissManager faissManager = new FaissManager();
+      float[] result = faissManager.faissKmeans(fileUri, k, dim, size);
+      Gson gson = new Gson();
+      promise.resolve(gson.toJson(result));
+    }
+    catch (Exception ex){
+      promise.reject(ex);
+    }
+
+  }
+
+  @ReactMethod
   public void trainIndex(String trainInput, Promise promise) {
     Type trainInputType = new TypeToken<TrainIndexInput>() {
     }.getType();

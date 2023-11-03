@@ -16,4 +16,8 @@ abstract class FaissSpec extends ReactContextBaseJavaModule {
 
   public abstract void trainIndex(String trainInput,Promise promise);
   public abstract void  dbscanClustering(String data, Promise promise) throws Exception;
+
+  public abstract  void clusterWithFile(String fileUri, float eps, int minPts,Promise promise);
+
+  public abstract  void  kmeansCluster(String fileUri,int k, int dim,int size,Promise promise);
 }

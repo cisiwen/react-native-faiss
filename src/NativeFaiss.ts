@@ -46,6 +46,8 @@ export interface Spec extends TurboModule {
   queryIndex(input:string):Promise<string>;
   trainIndex(input:string):Promise<string>;
   dbscanClustering(input:string):Promise<ClusteringOutput>;
+  clusterWithFile(fileUri:string,eps:number,minPts:number):Promise<ClusteringOutput>;
+  kmeansCluster(fileUri:string, k:number, dim:number,size:number):Promise<number[]>;
 }
 
 

@@ -53,3 +53,12 @@ export async function trainIndex(input:TrainIndexInput): Promise<string> {
   let result = await Faiss.trainIndex(JSON.stringify(input));
   return result;
 }
+export async function clusterWithFile(fileUri:string,eps:number,minPts:number):Promise<ClusteringOutput> {
+  let result = await Faiss.clusterWithFile(fileUri,eps,minPts);
+  return JSON.parse(result);
+}
+
+export async function kmeansCluster(fileUri:string,k:number,dim:number,siz:number):Promise<number[]> {
+  let result = await Faiss.kmeansCluster(fileUri,k,dim,siz);
+  return JSON.parse(result);
+}

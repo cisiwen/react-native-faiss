@@ -1,7 +1,7 @@
 import * as React from 'react';
 import * as RNFS from 'react-native-fs';
 import { StyleSheet, View, Text, Image, ScrollView, FlatList } from 'react-native';
-import { multiply, faissIndex, faissSearch, trainIndex, dbscanClustering } from '../../src/index';
+import { multiply, faissIndex, faissSearch, trainIndex, dbscanClustering,clusterWithFile } from '../../src/index';
 import type { ClusteringInput, IndexInput, QueryInput, TrainIndexInput } from '../../src/NativeFaiss';
 import { detectFaces } from '@cisiwen/react-native-photo-ai';
 import datas from './data.json';
@@ -240,10 +240,17 @@ export default function App() {
     const indexWithTemplate = async () => {
       let template = [73, 120, 70, 50, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 16, 0, 0, 0, 0, 0, 0, 0, 16, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
     }
+
+    const testClusterWithFile = async () => {
+      let faceEmbeddingFile= RNFS.DownloadDirectoryPath+"/famifotofiles/imageobjects/faceembedding/faces.raw";
+      let result = await clusterWithFile(faceEmbeddingFile, 0.34, 2);
+      console.log("clusterWithFiles", result);
+    }
     //startTrainIndex();
     ///indexAll();
     //search();
-    facenetDetect();
+    //facenetDetect();
+    testClusterWithFile();
   }, []);
   const renderGrid = (data:{id: number, face: FaceDetectionResult[] },rootIndex:number) => {
     return (

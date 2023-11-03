@@ -39,6 +39,9 @@ public class FaissManager {
     return  result;
   }
 
+  public  float[] faissKmeans(String dataFile,int k, int dim, int size) {
+    return FaissManager.KmeansCluster(dataFile,k,dim,size);
+  }
 
   public static native String stringFromJNI(int a);
 
@@ -53,4 +56,5 @@ public class FaissManager {
 
   public  static  native  String CreateIndexFromTemplate(int[] idsJ, float[][] vectorsJ, String indexPathJ, byte[] templateIndexJ);
 
+  public  static  native  float[] KmeansCluster(String indexName,int k,int dim,int size);
 }

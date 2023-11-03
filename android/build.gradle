@@ -122,7 +122,8 @@ dependencies {
   implementation 'com.google.code.gson:gson:+'
   implementation fileTree(dir: 'libs', include: ['*.jar'])
   api group: 'org.apache.commons', name: 'commons-math3', version: '3.6.1'
-  api group: 'io.github.elki-project', name: 'elki', version:'0.8.0'
+  //implementation 'org.tribuo:tribuo-all:4.3.1'
+  //api group: 'io.github.elki-project', name: 'elki', version:'0.8.0'
 }
 
 if (isNewArchitectureEnabled()) {

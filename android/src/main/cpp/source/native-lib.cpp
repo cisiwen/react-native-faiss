@@ -30,6 +30,7 @@ int64_t getCurrentMillTime()
 const std::string L2 = "l2";
 const std::string INNER_PRODUCT = "innerproduct";
 
+
 std::string ConvertJavaStringToCppString(JNIEnv *env, jstring javaString)
 {
     if (javaString == nullptr)
@@ -351,16 +352,22 @@ Java_com_faiss_FaissManager_CreateIndexFromTemplate(JNIEnv *env, jclass clazz, j
 }
 
 
-std::vector<float> getEmbeddingFromFile(JNIEnv *env,jstring indexPathJ,int dim,int size) {
+struct getEmbeddingOutput {
+    std::vector<float> embeddings;
+    std::vector<int>ids;
+};
+getEmbeddingOutput getEmbeddingFromFile(JNIEnv *env,jstring indexPathJ,int dim,int size) {
     std::string indexPathCpp(ConvertJavaStringToCppString(env, indexPathJ));
     char *filename= (char *)indexPathCpp.c_str();
     std::ifstream ifs(filename);
+    getEmbeddingOutput response;
     if(!ifs.is_open())
     {
         std::cout << "Error opening file";
         exit(-1);
     }
     std::vector<float> output(dim*size);
+    std::vector<int> ids;
     int i=0;
     while (!ifs.eof()){
         std::string line;
@@ -371,10 +378,12 @@ std::vector<float> getEmbeddingFromFile(JNIEnv *env,jstring indexPathJ,int dim,i
         std::string field;
         int j = 0;
         while (std::getline(sin, field, ',')){
-            float one = atof(field.c_str());
             if(j==0){
+                int id = atoi(field.c_str());
+                ids.push_back(id);
             }
             else{
+                float one = atof(field.c_str());
                 output[i] = one;
                 i++;
             }
@@ -383,10 +392,12 @@ std::vector<float> getEmbeddingFromFile(JNIEnv *env,jstring indexPathJ,int dim,i
     }
 
     ifs.close();
-    return  output;
+    response.ids = ids;
+    response.embeddings=output;
+    return  response;
 }
 
-extern "C" JNIEXPORT jintArray
+extern "C" JNIEXPORT jobjectArray
 JNICALL
 Java_com_faiss_FaissManager_KmeansCluster(JNIEnv *env,jclass clazz,jstring indexPathJ,jint k, jint dim,jint size){
     faiss::ClusteringParameters cp;
@@ -394,7 +405,9 @@ Java_com_faiss_FaissManager_KmeansCluster(JNIEnv *env,jclass clazz,jstring index
     cp.verbose= true;
     cp.int_centroids= true;
     int numberOfClusters = k;
-    std::vector<float> vecs = getEmbeddingFromFile(env,indexPathJ,dim,size);
+    getEmbeddingOutput dataFromFile = getEmbeddingFromFile(env,indexPathJ,dim,size);
+    std::vector<float> vecs = dataFromFile.embeddings;
+    std::vector<int> ids = dataFromFile.ids;
     faiss::IndexFlatL2 index(dim);
     std::vector<float> centroids(k * dim);
     faiss::kmeans_clustering(dim,size,k,vecs.data(),centroids.data());
@@ -404,9 +417,14 @@ Java_com_faiss_FaissManager_KmeansCluster(JNIEnv *env,jclass clazz,jstring index
     index.search(size, vecs.data(), 1, dist.data(), assign.data());
     std::vector<faiss::Index::idx_t> clusters =assign;
     jintArray output = env->NewIntArray(clusters.size());
-    env->SetIntArrayRegion(output, 0, clusters.size(),
-                           reinterpret_cast<const jint *>(clusters.data()));
-    return output;
+    jclass resultClass = env->FindClass("com/faiss/models/KmeanOutputItem");
+    jmethodID allArgs = env->GetMethodID(resultClass, "<init>", "(II)V");
+    jobjectArray results = NewObjectArray(env, clusters.size(), resultClass, nullptr);
+    for(int i=0;i<clusters.size();i++){
+        jobject result = env->NewObject(resultClass, allArgs, jint(ids[i]), jint(clusters[i]));
+        SetObjectArrayElement(env, results, i, result);
+    }
+    return results;
 }
 
 extern "C" JNIEXPORT jobjectArray

@@ -12,6 +12,7 @@ import com.faiss.models.ClusteringOutput;
 import com.faiss.models.DBScanInput;
 import com.faiss.models.IndexInput;
 import com.faiss.models.KNNQueryResult;
+import com.faiss.models.KmeanOutputItem;
 import com.faiss.models.QueryInput;
 import com.faiss.models.TrainIndexInput;
 import com.google.gson.Gson;
@@ -144,7 +145,7 @@ public class FaissModule extends FaissSpec {
   public void kmeansCluster(String fileUri,int k, int dim,int size,Promise promise){
     try {
       FaissManager faissManager = new FaissManager();
-      int[] result = faissManager.faissKmeans(fileUri, k, dim, size);
+      KmeanOutputItem[] result = faissManager.faissKmeans(fileUri, k, dim, size);
       Gson gson = new Gson();
       promise.resolve(gson.toJson(result));
     }

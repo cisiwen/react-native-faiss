@@ -2,6 +2,7 @@ package com.faiss;
 
 import com.faiss.models.IndexInput;
 import com.faiss.models.KNNQueryResult;
+import com.faiss.models.KmeanOutputItem;
 import com.faiss.models.QueryInput;
 import com.faiss.models.TrainIndexInput;
 
@@ -39,7 +40,7 @@ public class FaissManager {
     return  result;
   }
 
-  public  int[] faissKmeans(String dataFile,int k, int dim, int size) {
+  public  KmeanOutputItem[] faissKmeans(String dataFile,int k, int dim, int size) {
     return FaissManager.KmeansCluster(dataFile,k,dim,size);
   }
 
@@ -56,5 +57,5 @@ public class FaissManager {
 
   public  static  native  String CreateIndexFromTemplate(int[] idsJ, float[][] vectorsJ, String indexPathJ, byte[] templateIndexJ);
 
-  public  static  native  int[] KmeansCluster(String indexName,int k,int dim,int size);
+  public  static  native  KmeanOutputItem[] KmeansCluster(String indexName, int k, int dim, int size);
 }

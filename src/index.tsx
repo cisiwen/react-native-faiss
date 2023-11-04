@@ -1,5 +1,5 @@
 import { NativeModules, Platform } from 'react-native';
-import type { ClusteringInput, ClusteringOutput, IndexInput, QueryInput, QueryResultItem, TrainIndexInput } from './NativeFaiss';
+import type { ClusteringInput, ClusteringOutput, IndexInput, KmeanClusterItem, QueryInput, QueryResultItem, TrainIndexInput } from './NativeFaiss';
 
 const LINKING_ERROR =
   `The package 'react-native-faiss' doesn't seem to be linked. Make sure: \n\n` +
@@ -58,7 +58,7 @@ export async function clusterWithFile(fileUri:string,eps:number,minPts:number):P
   return JSON.parse(result);
 }
 
-export async function kmeansCluster(fileUri:string,k:number,dim:number,siz:number):Promise<number[]> {
+export async function kmeansCluster(fileUri:string,k:number,dim:number,siz:number):Promise<KmeanClusterItem[]> {
   let result = await Faiss.kmeansCluster(fileUri,k,dim,siz);
   return JSON.parse(result);
 }

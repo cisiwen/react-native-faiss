@@ -1,6 +1,6 @@
 {
   "name": "@cisiwen/react-native-faiss",
-  "version": "0.1.25",
+  "version": "0.1.26",
   "description": "react native ann search",
   "main": "lib/commonjs/index",
   "module": "lib/module/index",

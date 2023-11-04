@@ -26,7 +26,7 @@ if ((${ANDROID_ABI} STREQUAL "arm64-v8a") OR (${ANDROID_ABI} STREQUAL "x86_64"))
     set(FAISS_DIR ${NATIVE_DIR}/faiss)
     add_definitions(-D ANDROID_BIT32)
 else ()
-    set(FAISS_DIR ${NATIVE_DIR}/faiss_32)
+    set(FAISS_DIR ${NATIVE_DIR}/faiss)
     add_definitions(-D ANDROID_BIT64)
 endif ()
 
@@ -38,8 +38,9 @@ FILE(GLOB EXTRA_FILES
 FILE(GLOB FAISS_FILES
         ${FAISS_DIR}/*.cpp
         #add faiss source more
-        #${FAISS_DIR}/impl/*.cpp
-        #${FAISS_DIR}/utils/*.cpp
+        ${FAISS_DIR}/impl/*.cpp
+        ${FAISS_DIR}/utils/*.cpp
+        ${FAISS_DIR}/invlists/*.cpp
         )
 
 include_directories(${FAISS_DIR})
@@ -71,3 +72,6 @@ target_link_libraries( # Specifies the target library.
         # Links the target library to the log library
         # included in the NDK.
         ${log-lib})
+
+
+target_compile_definitions(faiss PRIVATE FINTEGER=int)

@@ -1,5 +1,8 @@
 # react-native-faiss
-
+...sh
+#include <faiss\/([\/A-Za-z-_]+).h>
+#include "$1.h"
+...
 react native ann search
 
 ## Installation

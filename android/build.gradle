@@ -62,8 +62,8 @@ android {
     buildConfigField "boolean", "IS_NEW_ARCHITECTURE_ENABLED", isNewArchitectureEnabled().toString()
     externalNativeBuild {
       cmake {
-        cppFlags "-std=c++11 -fopenmp"
-        arguments "-DANDROID_TOOLCHAIN=g++ -DANDROID_STL=c++_static  -DANDROID_PLATFORM=android-14"
+        cppFlags "-std=c++17 -fopenmp"
+        arguments "-DANDROID_TOOLCHAIN=g++ -DANDROID_STL=c++_static  -DANDROID_PLATFORM=android-14  -DBLA_VENDOR=OpenBLAS -DBLA_VENDOR=OpenBLAS -DMKL_LIBRARIES=/Users/wweng/Documents/projects/famifoto/OpenBLAS/build/lib/libopenblas.a"
         targets 'faiss'
       }
     }

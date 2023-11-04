@@ -14,9 +14,11 @@
 #include "faiss/index_io.h"
 #include "log.h"
 #include "faiss/AutoTune.h"
-#include "MetaIndexes.h"
-#include "faiss/AuxIndexStructures.h"
+#include "faiss/MetaIndexes.h"
+#include "faiss/impl/AuxIndexStructures.h"
 #include "faiss/Clustering.h"
+#include "faiss/index_factory.h"
+#include "faiss/impl/io.h"
 
 int64_t getCurrentMillTime()
 {
@@ -460,7 +462,7 @@ Java_com_faiss_FaissManager_QueryIndex(JNIEnv *env, jclass clazz, jstring indexP
     jobject result;
     for (int i = 0; i < resultSize; ++i)
     {
-        result = env->NewObject(resultClass, allArgs, ids[i], dis[i]);
+        result = env->NewObject(resultClass, allArgs, jint(ids[i]), jfloat(dis[i]));
         SetObjectArrayElement(env, results, i, result);
     }
     return results;

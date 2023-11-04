@@ -246,7 +246,9 @@ void ReleaseByteArrayElements(JNIEnv *env, jbyteArray array, jbyte *elems, int m
 
 std::unique_ptr<faiss::Index> indexWriter;
 faiss::IndexIDMap idMap;
-extern "C" JNIEXPORT jstring JNICALL
+
+extern "C" JNIEXPORT jstring
+JNICALL
 Java_com_faiss_FaissManager_indexFromAndroid(JNIEnv *env, jclass clazz,
                                              jobjectArray embedding, jintArray ids, jint dim, jstring indexName, jstring ended)
 {
@@ -285,7 +287,8 @@ Java_com_faiss_FaissManager_indexFromAndroid(JNIEnv *env, jclass clazz,
 }
 
 
-extern "C" JNIEXPORT jstring JNICALL
+extern "C" JNIEXPORT jstring
+JNICALL
 Java_com_faiss_FaissManager_CreateIndexFromTemplate(JNIEnv *env, jclass clazz, jintArray idsJ,
                                                     jobjectArray vectorsJ, jstring indexPathJ,
                                                     jbyteArray templateIndexJ)
@@ -383,24 +386,31 @@ std::vector<float> getEmbeddingFromFile(JNIEnv *env,jstring indexPathJ,int dim,i
     return  output;
 }
 
-extern "C" JNIEXPORT jfloatArray JNICALL
+extern "C" JNIEXPORT jintArray
+JNICALL
 Java_com_faiss_FaissManager_KmeansCluster(JNIEnv *env,jclass clazz,jstring indexPathJ,jint k, jint dim,jint size){
     faiss::ClusteringParameters cp;
     cp.niter = 300;
     cp.verbose= true;
+    cp.int_centroids= true;
     int numberOfClusters = k;
     std::vector<float> vecs = getEmbeddingFromFile(env,indexPathJ,dim,size);
     faiss::IndexFlatL2 index(dim);
-    faiss::Clustering kMeans(dim, numberOfClusters,cp);
-    kMeans.train(numberOfClusters, vecs.data(), index);
-
-    std::vector<float> clusters =kMeans.centroids;
-    jfloatArray output = env->NewFloatArray(clusters.size());
-    env->SetFloatArrayRegion(output,0,clusters.size(),clusters.data());
+    std::vector<float> centroids(k * dim);
+    faiss::kmeans_clustering(dim,size,k,vecs.data(),centroids.data());
+    std::vector<faiss::Index::idx_t> assign(size);
+    std::vector<float> dist(size);
+    index.add(numberOfClusters, centroids.data());
+    index.search(size, vecs.data(), 1, dist.data(), assign.data());
+    std::vector<faiss::Index::idx_t> clusters =assign;
+    jintArray output = env->NewIntArray(clusters.size());
+    env->SetIntArrayRegion(output, 0, clusters.size(),
+                           reinterpret_cast<const jint *>(clusters.data()));
     return output;
 }
 
-extern "C" JNIEXPORT jobjectArray JNICALL
+extern "C" JNIEXPORT jobjectArray
+JNICALL
 Java_com_faiss_FaissManager_QueryIndex(JNIEnv *env, jclass clazz, jstring indexPathJ, jfloatArray queryVectorJ, jint kJ)
 {
 
@@ -460,7 +470,7 @@ Java_com_faiss_FaissManager_QueryIndex(JNIEnv *env, jclass clazz, jstring indexP
     jobject result;
     for (int i = 0; i < resultSize; ++i)
     {
-        result = env->NewObject(resultClass, allArgs, ids[i], dis[i]);
+        result = env->NewObject(resultClass, allArgs, jint(ids[i]), jfloat(dis[i]));
         SetObjectArrayElement(env, results, i, result);
     }
     return results;
@@ -499,7 +509,8 @@ void InternalTrainIndex(faiss::Index *index, int64_t n, const float *x)
     }
 }
 
-extern "C" JNIEXPORT jlong JNICALL
+extern "C" JNIEXPORT jlong
+JNICALL
 Java_com_faiss_FaissManager_TransferVectors(JNIEnv *env, jclass cls, jlong vectorsPointerJ, jobjectArray vectorsJ, jint dimJ)
 {
     std::vector<float> *vect;
@@ -518,7 +529,8 @@ Java_com_faiss_FaissManager_TransferVectors(JNIEnv *env, jclass cls, jlong vecto
     return (jlong)vect;
 }
 
-extern "C" JNIEXPORT void JNICALL
+extern "C" JNIEXPORT void
+JNICALL
 Java_com_faiss_FaissManager_FreeVectors(JNIEnv *env, jclass cls, jlong vectorsPointerJ)
 {
     if (vectorsPointerJ != 0)
@@ -528,7 +540,8 @@ Java_com_faiss_FaissManager_FreeVectors(JNIEnv *env, jclass cls, jlong vectorsPo
     }
 }
 
-extern "C" JNIEXPORT jstring JNICALL
+extern "C" JNIEXPORT jstring
+JNICALL
 Java_com_faiss_FaissManager_stringFromJNI(JNIEnv *env, jclass clazz, jint number)
 {
     std::string result = "0";
@@ -596,7 +609,8 @@ Java_com_faiss_FaissManager_stringFromJNI(JNIEnv *env, jclass clazz, jint number
     return env->NewStringUTF(result.c_str());
 }
 
-extern "C" JNIEXPORT jbyteArray JNICALL
+extern "C" JNIEXPORT jbyteArray
+JNICALL
 Java_com_faiss_FaissManager_TrainIndex(JNIEnv *env, jclass clazz, jint dimensionJ, jlong trainVectorsPointerJ)
 {
     // First, we need to build the index

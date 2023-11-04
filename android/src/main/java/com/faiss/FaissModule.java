@@ -144,7 +144,7 @@ public class FaissModule extends FaissSpec {
   public void kmeansCluster(String fileUri,int k, int dim,int size,Promise promise){
     try {
       FaissManager faissManager = new FaissManager();
-      float[] result = faissManager.faissKmeans(fileUri, k, dim, size);
+      int[] result = faissManager.faissKmeans(fileUri, k, dim, size);
       Gson gson = new Gson();
       promise.resolve(gson.toJson(result));
     }

@@ -378,12 +378,11 @@ getEmbeddingOutput getEmbeddingFromFile(JNIEnv *env,jstring indexPathJ,int dim,i
         std::string field;
         int j = 0;
         while (std::getline(sin, field, ',')){
+            float one = atof(field.c_str());
             if(j==0){
-                int id = atoi(field.c_str());
-                ids.push_back(id);
+                ids.push_back(int(one));
             }
             else{
-                float one = atof(field.c_str());
                 output[i] = one;
                 i++;
             }

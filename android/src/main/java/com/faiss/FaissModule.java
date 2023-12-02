@@ -134,7 +134,7 @@ public class FaissModule extends FaissSpec {
       ArrayList<ArrayList<Integer>> clusters = dbscanManager.ClusterWithFile(fileUri, eps, minPts,this.getReactApplicationContext());
       ClusteringOutput output = new ClusteringOutput();
       output.clusters = clusters;
-      output.totalData = this.dbScanInput.embedding.size();
+      //output.totalData = this.dbScanInput.embedding.size();
       promise.resolve(gson.toJson(output));
     } catch (Exception ex) {
       promise.reject(ex);

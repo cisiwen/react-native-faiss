@@ -154,9 +154,58 @@ public class DBSCANManager {
       line = reader.readLine();
       this.AddLineToData(data, line);
     }
-    return this.ClusterFaces(data);
+    List<DoublePoint> embeddings = new ArrayList<>();
+    for(int i=0;i<data.embedding.size();i++) {
+      embeddings.add(new DoublePoint(data.embedding.get(i)));
+    }
+
+    ArrayList<ArrayList<Integer>> allClusters = this.ClusterFaces(data,embeddings);
+    List<DoublePoint> nextEmbedding = getNextEmbedding(data,embeddings,allClusters);
+    data.eps=data.eps+1;
+    ArrayList<ArrayList<Integer>> second = this.ClusterFaces(data,nextEmbedding);
+    allClusters.addAll(second);
+
+    data.eps=data.eps+1;
+    nextEmbedding = getNextEmbedding(data,embeddings,allClusters);
+    ArrayList<ArrayList<Integer>> third = this.ClusterFaces(data,nextEmbedding);
+    allClusters.addAll(third);
+
+    data.eps=data.eps+1;
+    nextEmbedding = getNextEmbedding(data,embeddings,allClusters);
+    ArrayList<ArrayList<Integer>> fourth = this.ClusterFaces(data,nextEmbedding);
+    allClusters.addAll(fourth);
+    return  allClusters;
   }
 
+
+  public  List<DoublePoint> getNextEmbedding(DBScanInput data, List<DoublePoint> allEmbeddings, ArrayList<ArrayList<Integer>> currentCluster) {
+    ArrayList<Integer> allIds = new ArrayList<>();
+    for (ArrayList<Integer> one : currentCluster) {
+      allIds.addAll(one);
+    }
+    List<DoublePoint> embeddings = new ArrayList<>();
+    for (int i = 0; i < data.embedding.size(); i++) {
+      int id = data.ids.get(i);
+      if (!allIds.contains(id)) {
+        embeddings.add(allEmbeddings.get(i));
+      }
+    }
+    return  embeddings;
+  }
+  public ArrayList<ArrayList<Integer>> ClusterFaces(DBScanInput data,List<DoublePoint> embeddings) {
+    DistanceMeasure distanceMeasure = new DistanceMeasure() {
+      @Override
+      public double compute(double[] a, double[] b) throws DimensionMismatchException {
+        EuclideanDistance distance = new EuclideanDistance();
+        return distance.compute(a,b);
+      }
+    };
+
+    DBSCANClusterer dbscanClusterer = new DBSCANClusterer(data.eps, data.minPts);
+    List<Cluster<DoublePoint>> cluster = dbscanClusterer.cluster(embeddings);
+    ArrayList<ArrayList<Integer>> idsClusters = this.getClusterIds(data,cluster);
+    return  idsClusters;
+  }
   public ArrayList<ArrayList<Integer>> ClusterFaces(DBScanInput data) {
     DistanceMeasure distanceMeasure = new DistanceMeasure() {
       @Override
